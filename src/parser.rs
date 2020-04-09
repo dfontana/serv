@@ -21,6 +21,9 @@ fn build_addition(tokens: &mut Peekable<Iter<Token>>) -> Expr {
                 let right = build_multiplication(tokens);
                 left = Expr::BinOp(*token, Box::new(left), Box::new(right));
             },
+            Some(&token) if token == &Token::CloseParen => {
+                tokens.next();
+            },
             _ => break,
         }
     }
@@ -44,7 +47,6 @@ fn build_multiplication(tokens: &mut Peekable<Iter<Token>>) -> Expr {
 
 fn build_leaf_term(tokens: &mut Peekable<Iter<Token>>) -> Expr {
     match tokens.next() {
-        // TODO added this line to try and support parens. Works for 12 / (3+2) but not (3-2)*12. Not quite right
         Some(Token::OpenParen) => build_addition(tokens),
         Some(Token::Number(num)) => Expr::Number(*num),
         _ => panic!("Term was expected"),
