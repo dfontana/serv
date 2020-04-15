@@ -6,7 +6,6 @@ extern crate rocket;
 extern crate rocket_contrib;
 extern crate lib;
 
-use lib::creative::{Creative, Size};
 use rocket::Request;
 use rocket_contrib::json::JsonValue;
 
@@ -14,19 +13,12 @@ mod routes;
 
 #[catch(404)]
 fn not_found(req: &Request) -> JsonValue {
-  json!({
-    "error":
-      format!(
-        "Unknown path: {}, {}",
-        req.uri(),
-        Creative::new(Size::new(32, 32)).area()
-      )
-  })
+  json!({ "error": format!("Unknown path: {}", req.uri()) })
 }
 
 fn main() {
   rocket::ignite()
-    .mount("/image", routes![routes::get_image])
+    .mount("/image", routes![routes::get_image, routes::test])
     .register(catchers![not_found])
     .launch();
 }

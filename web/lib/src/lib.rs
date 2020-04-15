@@ -1,12 +1,14 @@
 extern crate image;
 extern crate imageproc;
 
+mod block;
+mod render;
+
+use image::{png::PNGEncoder, ImageBuffer, ImageError, Pixel, RgbImage};
 use std::ops::Deref;
-use image::{png::{PNGEncoder}, Pixel, ImageBuffer, RgbImage, ImageError};
 
-pub use creative::size;
-
-pub mod creative;
+use block::{Block, BlockRenderer};
+use render::{RenderTree, Visitable};
 
 pub fn build_image() -> Result<Vec<u8>, ImageError> {
   // https://docs.rs/image/0.23.3/image/#fn.save_buffer.html
@@ -23,11 +25,19 @@ pub fn build_image() -> Result<Vec<u8>, ImageError> {
   encode_image(&buf)
 }
 
-fn encode_image<P, Container>(img: &ImageBuffer<P, Container>) -> Result<Vec<u8>, ImageError> 
+pub fn run_test() -> String {
+  // TODO build a more complex tree.
+  let tree = RenderTree::new(Block::Solid);
+  let mut node_list = BlockRenderer::new();
+  tree.accept(&mut node_list);
+  format!("{:?}", node_list)
+}
+
+fn encode_image<P, Container>(img: &ImageBuffer<P, Container>) -> Result<Vec<u8>, ImageError>
 where
   P: Pixel<Subpixel = u8> + 'static,
   Container: Deref<Target = [P::Subpixel]>,
-{ 
+{
   let mut out = Vec::new();
   let encoder = PNGEncoder::new(&mut out);
   encoder.encode(img, img.width(), img.height(), P::COLOR_TYPE)?;
