@@ -29,17 +29,16 @@ pub struct NodeBuilder<T: Clone> {
 }
 
 impl<T: Clone> Visitable<T> for RenderTree<T> {
-  // TODO this is wrong, there's no recurse step since renderTree is only at the top level
-  //      when we call visit on each node, it won't go to the child note. We should make the
-  //      not Visitable, so it can properly dispatch
   fn accept<V: Visitor<T>>(&self, visitor: &mut V) {
-    visitor.visit_node(&self.root);
-    // TODO go to the children in order, consider BTreeMap if that helps
-    self
-      .root
-      .children
-      .values()
-      .for_each(|n| visitor.visit_node(&n));
+    self.root.accept(visitor);
+  }
+}
+
+impl<T: Clone> Visitable<T> for Node<T> {
+  fn accept<V: Visitor<T>>(&self, visitor: &mut V) {
+    visitor.visit_node(self);
+    // TODO ensure visit order is by position.
+    self.children.values().for_each(|n| n.accept(visitor));
   }
 }
 
