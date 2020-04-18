@@ -8,7 +8,7 @@ use image::{png::PNGEncoder, ImageBuffer, ImageError, Pixel, RgbImage};
 use std::ops::Deref;
 
 use block::{Block, BlockRenderer};
-use render::{RenderTree, Visitable};
+use render::{RenderTree, Node, Visitable};
 
 pub fn build_image() -> Result<Vec<u8>, ImageError> {
   // https://docs.rs/image/0.23.3/image/#fn.save_buffer.html
@@ -26,8 +26,18 @@ pub fn build_image() -> Result<Vec<u8>, ImageError> {
 }
 
 pub fn run_test() -> String {
-  // TODO build a more complex tree.
-  let tree = RenderTree::new(Block::Solid);
+  let tree: RenderTree<Block> = Node::builder(Block::Layer)
+    .add(1, Block::Solid)
+    .nest(
+      2, 
+      Node::builder(Block::Layer)
+        .add(1, Block::Text)
+        .add(2, Block::Text)
+        .build())
+    .add(3, Block::Text)
+    .build()
+    .into();
+
   let mut node_list = BlockRenderer::new();
   tree.accept(&mut node_list);
   format!("{:?}", node_list)
