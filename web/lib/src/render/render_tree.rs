@@ -13,8 +13,6 @@ impl<T: Clone> Visitable<T> for RenderTree<T> {
 
 impl<T: Clone> From<Node<T>> for RenderTree<T> {
   fn from(node: Node<T>) -> RenderTree<T> {
-    RenderTree {
-      root: node
-    }
+    RenderTree { root: node }
   }
-} 
+}

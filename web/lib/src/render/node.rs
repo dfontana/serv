@@ -1,23 +1,21 @@
-use std::collections::HashMap;
 use super::{Visitable, Visitor};
+use std::collections::BTreeMap;
 
 #[derive(Clone, Debug)]
 pub struct Node<T: Clone> {
-  children: HashMap<i32, Node<T>>,
+  children: BTreeMap<i32, Node<T>>,
   value: T,
 }
 
 #[derive(Clone, Debug)]
 pub struct NodeBuilder<T: Clone> {
-  children: HashMap<i32, Node<T>>,
+  children: BTreeMap<i32, Node<T>>,
   value: T,
 }
-
 
 impl<T: Clone> Visitable<T> for Node<T> {
   fn accept<V: Visitor<T>>(&self, visitor: &mut V) {
     visitor.visit_node(self);
-    // TODO ensure visit order is by position.
     self.children.values().for_each(|n| n.accept(visitor));
   }
 }
@@ -39,7 +37,7 @@ impl<T: Clone> Node<T> {
 impl<T: Clone> NodeBuilder<T> {
   fn new(value: T) -> NodeBuilder<T> {
     NodeBuilder {
-      children: HashMap::new(),
+      children: BTreeMap::new(),
       value,
     }
   }

@@ -14,6 +14,7 @@ impl BlockRenderer {
 
 impl Visitor<Block> for BlockRenderer {
   fn visit_node(&mut self, n: &Node<Block>) {
-    self.blocks.push(n.value().name())
+    // TODO actually render the nodes using image-rs
+    self.blocks.push(n.value().b_type().name())
   }
 }
