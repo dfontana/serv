@@ -6,10 +6,10 @@ extern crate regex;
 extern crate lazy_static;
 
 mod block;
-mod render;
-mod encode;
 mod built_image;
+mod encode;
 mod fractal_tree;
+mod render;
 
-pub use fractal_tree::build_image;
 pub use built_image::run_test;
+pub use fractal_tree::build_image;

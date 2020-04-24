@@ -2,5 +2,6 @@
 members = [
     "web",
     "web/lib",
-    "ast"
+    "ast",
+    "request",
 ]

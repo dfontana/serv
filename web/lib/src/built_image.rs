@@ -1,4 +1,7 @@
-use super::block::{BlockRenderer, BlockType::{Layer, Text, Solid}, Block};
+use super::block::{
+  Block, BlockRenderer,
+  BlockType::{Layer, Solid, Text},
+};
 use super::render::{Node, RenderTree, Visitable};
 
 pub fn run_test() -> String {

@@ -1,7 +1,7 @@
+use super::encode::buf2png;
 use image::{ImageBuffer, ImageError, Rgb, RgbImage};
 use imageproc::drawing::{draw_convex_polygon_mut, Point};
 use rand::Rng;
-use super::encode::buf2png;
 
 pub fn build_image() -> Result<Vec<u8>, ImageError> {
   let mut buf: RgbImage = ImageBuffer::new(1024, 768);
