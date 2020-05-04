@@ -45,7 +45,7 @@ fn parse_username(username: &str, domain: &str) -> Result<URI, ParseError> {
   match parts.len() {
     2 => parse_domain(username, "", parts[0], parts[1]),
     3 => parse_domain(username, parts[0], parts[1], parts[2]),
-    _ => Err("Too many domain parts"),
+    _ => Err("Too many (or few) domain parts"),
   }
 }
 

@@ -9,3 +9,5 @@ edition = "2018"
 [dependencies]
 structopt = "0.3.14"
 error-chain = "0.12.2"
+confy = "0.4.0"
+serde = {version = "1.0.106", features = ["derive"] }
