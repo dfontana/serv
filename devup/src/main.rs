@@ -4,66 +4,48 @@ extern crate structopt;
 #[macro_use]
 extern crate error_chain;
 extern crate confy;
+extern crate dialoguer;
+extern crate git2;
 extern crate serde;
 
-mod cacerts;
-mod errors;
-mod inis;
-mod uri;
+mod cmd;
 mod config;
+mod errors;
+mod uri;
 
-use cacerts::set_certs;
-use inis::Pull;
+use cmd::{Certs, Inis, List, Setup};
+use config::{DevupConfig, FILE_NAME};
 use structopt::StructOpt;
-use uri::URI;
-use errors::*;
-use config::{DevupConfig};
-
-use std::path::PathBuf;
-use std::str::FromStr;
 
 #[derive(StructOpt)]
-struct Cli {
-  username: Option<String>,
-  devbox: Option<URI>,
-  #[structopt(parse(from_os_str))]
-  destination: Option<PathBuf>,
+enum Cli {
+  #[structopt(about = "Clone configurations to your machine")]
+  Inis(Inis),
+
+  #[structopt(about = "Configure SSL Certs for local Java")]
+  Certs(Certs),
+
+  #[structopt(about = "List branches you own for the current repo")]
+  List(List),
+
+  #[structopt(about = "Configure the DevUp tool")]
+  Setup(Setup),
 }
 
 fn main() {
-  // TODO try to default args when missing from config
   let args = Cli::from_args();
-  let conf = config::load("devup").unwrap();
-
-  // First set the certs on the local machine
-  match set_certs() {
+  let conf: DevupConfig = config::load(FILE_NAME).unwrap();
+  let res = match args {
+    Cli::Setup(setup) => setup.run(),
+    Cli::Inis(inis) => inis.run(conf),
+    Cli::Certs(cert) => cert.run(),
+    Cli::List(list) => list.run(),
+  };
+  match res {
     Err(e) => {
       eprintln!("Error: {}", e);
       std::process::exit(1);
     }
     _ => (),
   }
-
-  // Next copy the inis
-  let success = copy_from_remote(args, conf);
-  match success {
-    Err(e) => {
-      eprintln!("Error: {}", e);
-      std::process::exit(1);
-    }
-    _ => (),
-  }
-}
-
-fn copy_from_remote(args: Cli, conf: DevupConfig) -> Result<()> {
-  let success = Pull::new()
-    .user(args.username.unwrap_or(get_env("USER")?))
-    .source(args.devbox.unwrap_or(URI::from_str(get_env("DEVBOX")?.as_str())?))
-    .dest(args.destination.unwrap_or(PathBuf::from(conf.get_copy_path()?)))
-    .run();
-  Ok(())
-}
-
-fn get_env(var: &str) -> Result<String> {
-  std::env::var("USER").chain_err(|| format!("Failed to get env ${}", var))
 }
