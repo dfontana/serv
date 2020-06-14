@@ -2,22 +2,28 @@ use super::errors::*;
 use std::path::PathBuf;
 use std::process::Command;
 use std::str;
+use structopt::StructOpt;
 
-pub fn set_certs() -> Result<()> {
-  let path = get_java_home()?;
-  let paths = vec![
-    path.join("lib/security/cacerts"),
-    path.join("jre/lib/security/cacerts"),
-  ];
+#[derive(StructOpt)]
+pub struct Certs {}
 
-  let cacerts = paths
-    .iter()
-    .find(|p| p.exists())
-    .expect("Failed to find a cacerts path");
+impl Certs {
+  pub fn run(&self) -> Result<()> {
+    let path = get_java_home()?;
+    let paths = vec![
+      path.join("lib/security/cacerts"),
+      path.join("jre/lib/security/cacerts"),
+    ];
 
-  // TODO finish fetching certs & applying them.
+    let cacerts = paths
+      .iter()
+      .find(|p| p.exists())
+      .expect("Failed to find a cacerts path");
 
-  Ok(())
+    // TODO finish fetching certs & applying them.
+
+    Ok(())
+  }
 }
 
 fn get_java_home() -> Result<PathBuf> {

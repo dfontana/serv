@@ -165,6 +165,9 @@ name = "cc"
 version = "1.0.50"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95e28fa049fda1c330bcf9d723be7663a899c4679724b34c81e9f5a326aab8cd"
+dependencies = [
+ "jobserver",
+]
 
 [[package]]
 name = "cfg-if"
@@ -357,6 +360,7 @@ version = "0.1.0"
 dependencies = [
  "confy",
  "error-chain",
+ "git2",
  "serde",
  "structopt",
 ]
@@ -539,6 +543,21 @@ checksum = "471d90201b3b223f3451cd4ad53e34295f16a1df17b1edf3736d47761c3981af"
 dependencies = [
  "color_quant",
  "lzw",
+]
+
+[[package]]
+name = "git2"
+version = "0.13.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11e4b2082980e751c4bf4273e9cbb4a02c655729c8ee8a79f66cad03c8f4d31e"
+dependencies = [
+ "bitflags",
+ "libc",
+ "libgit2-sys",
+ "log 0.4.8",
+ "openssl-probe",
+ "openssl-sys",
+ "url 2.1.1",
 ]
 
 [[package]]
@@ -787,6 +806,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b8b7a7c0c47db5545ed3fef7468ee7bb5b74691498139e4b3f6a20685dc6dd8e"
 
 [[package]]
+name = "jobserver"
+version = "0.1.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c71313ebb9439f74b00d9d2dcec36440beaf57a6aa0623068441dd7cd81a7f2"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "jpeg-decoder"
 version = "0.1.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -849,6 +877,46 @@ name = "libc"
 version = "0.2.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "99e85c08494b21a9054e7fe1374a732aeadaff3980b6990b94bfd3a70f690005"
+
+[[package]]
+name = "libgit2-sys"
+version = "0.12.7+1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bcd07968649bcb7b9351ecfde53ca4d27673cccfdf57c84255ec18710f3153e0"
+dependencies = [
+ "cc",
+ "libc",
+ "libssh2-sys",
+ "libz-sys",
+ "openssl-sys",
+ "pkg-config",
+]
+
+[[package]]
+name = "libssh2-sys"
+version = "0.2.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d45f516b9b19ea6c940b9f36d36734062a153a2b4cc9ef31d82c54bb9780f525"
+dependencies = [
+ "cc",
+ "libc",
+ "libz-sys",
+ "openssl-sys",
+ "pkg-config",
+ "vcpkg",
+]
+
+[[package]]
+name = "libz-sys"
+version = "1.0.25"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2eb5e43362e38e2bca2fd5f5134c4d4564a23a5c28e9b95411652021a8675ebe"
+dependencies = [
+ "cc",
+ "libc",
+ "pkg-config",
+ "vcpkg",
+]
 
 [[package]]
 name = "log"
