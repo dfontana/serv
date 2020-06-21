@@ -4,26 +4,21 @@ extern crate structopt;
 #[macro_use]
 extern crate error_chain;
 extern crate confy;
-extern crate serde;
 extern crate git2;
+extern crate serde;
 
 mod branch;
 mod cacerts;
+mod config;
 mod errors;
 mod inis;
 mod uri;
-mod config;
 
 use branch::List;
 use cacerts::Certs;
+use config::DevupConfig;
 use inis::Inis;
 use structopt::StructOpt;
-use uri::URI;
-use errors::*;
-use config::{DevupConfig};
-
-use std::path::PathBuf;
-use std::str::FromStr;
 
 #[derive(StructOpt)]
 enum Cli {
@@ -38,11 +33,10 @@ enum Cli {
 }
 
 fn main() {
-  // TODO try to default args when missing from config
   let args = Cli::from_args();
-  let conf = config::load("devup").unwrap();
+  let conf: DevupConfig = config::load("devup").unwrap();
   let res = match args {
-    Cli::Inis(inis) => inis.run(),
+    Cli::Inis(inis) => inis.run(conf),
     Cli::Certs(cert) => cert.run(),
     Cli::List(list) => list.run(),
   };

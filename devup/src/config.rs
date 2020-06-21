@@ -1,22 +1,44 @@
-pub use confy::{load};
-use serde::{Serialize, Deserialize};
+pub use confy::load;
+use serde::{Deserialize, Serialize};
 
 use super::errors::*;
 
 #[derive(Serialize, Deserialize)]
 pub struct DevupConfig {
-    local_copy_path: String,
+  local_config_path: Option<String>,
+  remote_username: Option<String>,
+  remote_host: Option<String>,
 }
 
 impl ::std::default::Default for DevupConfig {
-    fn default() -> Self { Self { local_copy_path: "".into() } }
+  fn default() -> Self {
+    Self {
+      local_config_path: None,
+      remote_username: std::env::var("USER").ok(),
+      remote_host: std::env::var("DEVBOX").ok(),
+    }
+  }
 }
 
 impl DevupConfig {
-  pub fn get_copy_path(&self) -> Result<String> {
-    if self.local_copy_path.is_empty() {
-      Err("Must provide local copy path")?
+  pub fn get_config_path(&self) -> Result<String> {
+    match &self.local_config_path {
+      Some(val) => Ok(val.to_owned()),
+      None => Err("Did not set local config path in config")?
     }
-    Ok(self.local_copy_path.to_owned())
+  }
+
+  pub fn get_remote_username(&self) -> Result<String> {
+    match &self.remote_username {
+      Some(val) => Ok(val.to_owned()),
+      None => Err("Did not set Remote Username in config")?
+    }
+  }
+
+  pub fn get_remote_host(&self) -> Result<String> {
+    match &self.remote_host {
+      Some(val) => Ok(val.to_owned()),
+      None => Err("Did not set Remote Host in config")?
+    }
   }
 }

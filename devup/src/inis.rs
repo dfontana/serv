@@ -1,43 +1,32 @@
+use super::config::DevupConfig;
 use super::errors::*;
 use super::uri::URI;
 use std::path::PathBuf;
+use std::str::FromStr;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
 pub struct Inis {
   #[structopt(help = "Remote user to pull files as")]
-  username: String,
+  username: Option<String>,
   #[structopt(help = "Remote location to fetch from")]
-  devbox: URI,
+  devbox: Option<URI>,
   #[structopt(parse(from_os_str), help = "Local path to place files")]
   destination: Option<PathBuf>,
 }
 
 impl Inis {
-  pub fn run(&self) -> Result<()> {
+  pub fn run(&self, conf: DevupConfig) -> Result<()> {
     Pull::new()
-      .user(&self.username)
-      .source(&self.devbox)
+      .user(&self.username.as_ref().unwrap_or(&conf.get_remote_username()?))
+      .source(&self.devbox.as_ref().unwrap_or(&URI::from_str(&conf.get_remote_host()?)?))
       .dest(
         &self
           .destination
           .as_ref()
-          .get_or_insert(&PathBuf::from("/test")),
+          .unwrap_or(&PathBuf::from(conf.get_config_path()?)),
       )
       .run()
-  }
-
-  fn copy_from_remote(args: Cli, conf: DevupConfig) -> Result<()> {
-    let success = Pull::new()
-      .user(args.username.unwrap_or(get_env("USER")?))
-      .source(args.devbox.unwrap_or(URI::from_str(get_env("DEVBOX")?.as_str())?))
-      .dest(args.destination.unwrap_or(PathBuf::from(conf.get_copy_path()?)))
-      .run();
-    Ok(())
-  }
-
-  fn get_env(var: &str) -> Result<String> {
-    std::env::var("USER").chain_err(|| format!("Failed to get env ${}", var))
   }
 }
 
