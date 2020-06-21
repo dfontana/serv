@@ -7,17 +7,13 @@ extern crate confy;
 extern crate git2;
 extern crate serde;
 
-mod branch;
-mod cacerts;
+mod cmd;
 mod config;
 mod errors;
-mod inis;
 mod uri;
 
-use branch::List;
-use cacerts::Certs;
+use cmd::{Certs, Inis, List, Setup};
 use config::DevupConfig;
-use inis::Inis;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -30,12 +26,16 @@ enum Cli {
 
   #[structopt(about = "List branches you own for the current repo")]
   List(List),
+
+  #[structopt(about = "Configure the DevUp tool")]
+  Setup(Setup),
 }
 
 fn main() {
   let args = Cli::from_args();
   let conf: DevupConfig = config::load("devup").unwrap();
   let res = match args {
+    Cli::Setup(setup) => setup.run(),
     Cli::Inis(inis) => inis.run(conf),
     Cli::Certs(cert) => cert.run(),
     Cli::List(list) => list.run(),

@@ -1,11 +1,11 @@
-use super::errors::*;
+use crate::errors::*;
 use git2::{BranchType, Repository};
 use std::env;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
 pub struct List {
-  #[structopt(help = "Author's Email to filter branches by")]
+  #[structopt(help = "Optional. Author's Email to filter branches by (otherwise taken from repo)")]
   filter: Option<String>,
 }
 

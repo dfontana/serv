@@ -1,6 +1,6 @@
-use super::config::DevupConfig;
-use super::errors::*;
-use super::uri::URI;
+use crate::config::DevupConfig;
+use crate::errors::*;
+use crate::uri::URI;
 use std::path::PathBuf;
 use std::str::FromStr;
 use structopt::StructOpt;
