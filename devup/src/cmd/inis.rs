@@ -2,6 +2,7 @@ use crate::config::DevupConfig;
 use crate::errors::*;
 use crate::uri::URI;
 use std::path::PathBuf;
+use std::process::Command;
 use std::str::FromStr;
 use structopt::StructOpt;
 
@@ -17,49 +18,33 @@ pub struct Inis {
 
 impl Inis {
   pub fn run(&self, conf: DevupConfig) -> Result<()> {
-    Pull::new()
-      .user(
-        &self
-          .username
-          .as_ref()
-          .unwrap_or(&conf.get_remote_username()?),
-      )
-      .source(
-        &self
-          .devbox
-          .as_ref()
-          .unwrap_or(&URI::from_str(&conf.get_remote_host()?)?),
-      )
-      .dest(
-        &self
-          .destination
-          .as_ref()
-          .unwrap_or(&PathBuf::from(conf.get_config_path()?)),
-      )
-      .run()
-  }
-}
+    let user = match &self.username {
+      Some(user) => user.to_owned(),
+      None => conf.get_remote_username()?,
+    };
 
-struct Pull {}
+    let conf_source = conf.get_remote_host();
+    let source = match &self.devbox {
+      Some(uri) => uri.to_string(),
+      None => URI::from_str(&conf_source?)?.to_string(),
+    };
 
-impl Pull {
-  fn new() -> Pull {
-    Pull {}
-  }
+    let conf_dest = PathBuf::from(conf.get_config_path()?);
+    let dest = match &self.destination {
+      Some(dest) => dest,
+      None => &conf_dest,
+    }
+    .to_str()
+    .ok_or("Failed to build local path")?;
 
-  fn user(&self, user: &str) -> &Self {
-    &self
-  }
+    let output = Command::new("scp")
+      .arg(format!("{}@{}:{}", user, source, dest))
+      .arg(&dest)
+      .output()?;
 
-  fn source(&self, remote: &URI) -> &Self {
-    &self
-  }
-
-  fn dest(&self, path: &PathBuf) -> &Self {
-    &self
-  }
-
-  fn run(&self) -> Result<()> {
-    Ok(Err("test")?)
+    if !output.status.success() {
+      Err("Failed to transfer ini files!")?;
+    }
+    Ok(())
   }
 }
