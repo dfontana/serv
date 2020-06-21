@@ -1,8 +1,8 @@
 use crate::config::{DevupConfig, FILE_NAME};
 use crate::errors::*;
-use std::path::Path;
 use confy;
 use dialoguer::{theme::ColorfulTheme, Confirm, Input};
+use std::path::Path;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
