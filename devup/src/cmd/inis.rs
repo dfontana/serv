@@ -18,8 +18,18 @@ pub struct Inis {
 impl Inis {
   pub fn run(&self, conf: DevupConfig) -> Result<()> {
     Pull::new()
-      .user(&self.username.as_ref().unwrap_or(&conf.get_remote_username()?))
-      .source(&self.devbox.as_ref().unwrap_or(&URI::from_str(&conf.get_remote_host()?)?))
+      .user(
+        &self
+          .username
+          .as_ref()
+          .unwrap_or(&conf.get_remote_username()?),
+      )
+      .source(
+        &self
+          .devbox
+          .as_ref()
+          .unwrap_or(&URI::from_str(&conf.get_remote_host()?)?),
+      )
       .dest(
         &self
           .destination

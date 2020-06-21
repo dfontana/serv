@@ -4,6 +4,7 @@ extern crate structopt;
 #[macro_use]
 extern crate error_chain;
 extern crate confy;
+extern crate dialoguer;
 extern crate git2;
 extern crate serde;
 
@@ -13,7 +14,7 @@ mod errors;
 mod uri;
 
 use cmd::{Certs, Inis, List, Setup};
-use config::DevupConfig;
+use config::{DevupConfig, FILE_NAME};
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -33,7 +34,7 @@ enum Cli {
 
 fn main() {
   let args = Cli::from_args();
-  let conf: DevupConfig = config::load("devup").unwrap();
+  let conf: DevupConfig = config::load(FILE_NAME).unwrap();
   let res = match args {
     Cli::Setup(setup) => setup.run(),
     Cli::Inis(inis) => inis.run(conf),

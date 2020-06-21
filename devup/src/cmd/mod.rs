@@ -1,9 +1,9 @@
 mod branch;
-mod setup;
 mod cacerts;
 mod inis;
+mod setup;
 
 pub use branch::List;
-pub use setup::Setup;
 pub use cacerts::Certs;
 pub use inis::Inis;
+pub use setup::Setup;
