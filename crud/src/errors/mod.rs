@@ -5,6 +5,7 @@ use actix_web::{
   middleware::errhandlers::ErrorHandlerResponse,
   HttpResponse, Result,
 };
+use mongodb::bson::{de, document::ValueAccessError, ser};
 use thiserror::Error;
 
 pub fn handle_500<B>(res: ServiceResponse<B>) -> Result<ErrorHandlerResponse<Body>> {
@@ -31,13 +32,59 @@ pub fn handle_404<B>(res: ServiceResponse<B>) -> Result<ErrorHandlerResponse<Bod
 pub enum UserError {
   #[error("{field} is invalid: {reason}")]
   ValidationError { field: String, reason: String },
-  #[error("An Internal error occured")]
-  InternalError,
+  #[error("Internal Error occured: {cause}")]
+  InternalError { cause: String },
+  #[error("An Unknown Internal error occured")]
+  UnknownError,
 }
 
 impl From<Box<dyn std::error::Error>> for UserError {
   fn from(_item: Box<dyn std::error::Error>) -> Self {
-    UserError::InternalError
+    UserError::UnknownError
+  }
+}
+
+impl From<mongodb::error::Error> for UserError {
+  fn from(item: mongodb::error::Error) -> Self {
+    UserError::InternalError {
+      cause: item.kind.to_string(),
+    }
+  }
+}
+
+impl From<ser::Error> for UserError {
+  fn from(item: ser::Error) -> Self {
+    UserError::InternalError {
+      cause: item.to_string(),
+    }
+  }
+}
+
+impl From<de::Error> for UserError {
+  fn from(item: de::Error) -> Self {
+    UserError::InternalError {
+      cause: item.to_string(),
+    }
+  }
+}
+
+impl From<ValueAccessError> for UserError {
+  fn from(_item: ValueAccessError) -> UserError {
+    UserError::InternalError {
+      cause: "Malformed document".into(),
+    }
+  }
+}
+
+impl From<String> for UserError {
+  fn from(item: String) -> UserError {
+    UserError::InternalError { cause: item }
+  }
+}
+
+impl From<&str> for UserError {
+  fn from(item: &str) -> UserError {
+    UserError::InternalError { cause: item.into() }
   }
 }
 
@@ -51,7 +98,8 @@ impl error::ResponseError for UserError {
   fn status_code(&self) -> StatusCode {
     match *self {
       UserError::ValidationError { .. } => StatusCode::BAD_REQUEST,
-      UserError::InternalError => StatusCode::INTERNAL_SERVER_ERROR,
+      UserError::InternalError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
+      UserError::UnknownError => StatusCode::INTERNAL_SERVER_ERROR,
     }
   }
 }

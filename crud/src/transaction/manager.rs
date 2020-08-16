@@ -1,7 +1,10 @@
-use mongodb::Client;
-use std::error::Error;
-use super::model::{Txid, Transaction};
-use super::context::{CreateTransactionContext, ContextError};
+use super::context::CreateTransactionContext;
+use super::model::{Transaction, TransactionBuilder, Txid};
+use super::UserError;
+use mongodb::{
+  bson::{doc, from_bson, to_bson},
+  Client,
+};
 
 #[derive(Builder)]
 #[builder(setter(into, prefix = "with"))]
@@ -13,65 +16,42 @@ impl TransactionService {
   pub fn new() -> TransactionServiceBuilder {
     TransactionServiceBuilder::default()
   }
-  pub fn create(&self, ctx: CreateTransactionContext) -> Result<Txid, Box<dyn Error>> {
-    Err(ContextError.into())
+
+  pub async fn create(&self, ctx: CreateTransactionContext) -> Result<Txid, UserError> {
+    let txn = TransactionBuilder::default()
+      .cents(ctx.cents.clone())
+      .from(ctx.from.clone())
+      .to(ctx.to.clone())
+      .build();
+    let doc = to_bson(&txn)?
+      .as_document()
+      .ok_or("Failed to build doc")?
+      .to_owned();
+    let collection = self.mongo.database("main").collection("transactions");
+    collection
+      .insert_one(doc, None)
+      .await
+      .map(|res| Txid {
+        id: res.inserted_id.as_str().unwrap_or_default().to_string(),
+      })
+      .map_err(UserError::from)
   }
-  pub fn load(&self, txid: Txid) -> Result<Transaction, Box<dyn Error>> {
-    Err(ContextError.into())
+
+  pub async fn load(&self, txid: Txid) -> Result<Transaction, UserError> {
+    let collection = self.mongo.database("main").collection("transactions");
+    let filter = doc! {"_id": txid.id};
+    let maybe_doc = match collection.find_one(filter, None).await {
+      Ok(d) => d,
+      Err(err) => {
+        return Err(UserError::InternalError {
+          cause: err.kind.to_string(),
+        })
+      }
+    };
+    let doc = maybe_doc.ok_or(UserError::ValidationError {
+      field: "id".into(),
+      reason: "Failed to find document".into(),
+    })?;
+    from_bson::<Transaction>(doc.into()).map_err(UserError::from)
   }
 }
-
-
-// use futures::stream::StreamExt;
-// use mongodb::{
-//   bson::{doc, Bson},
-//   options::{ClientOptions, FindOptions},
-//   Client,
-// };
-
-// async fn run() -> Result<(), mongodb::error::Error> {
-
-//   // List the names of the databases in that deployment.
-//   for db_name in client.list_database_names(None, None).await? {
-//     println!("{}", db_name);
-//   }
-
-//   // Get a handle to a database.
-//   let db = client.database("mydb");
-
-//   // List the names of the collections in that database.
-//   for collection_name in db.list_collection_names(None).await? {
-//     println!("{}", collection_name);
-//   }
-
-//   // Get a handle to a collection in the database.
-//   let collection = db.collection("books");
-
-//   let docs = vec![
-//     doc! { "title": "1984", "author": "George Orwell" },
-//     doc! { "title": "Animal Farm", "author": "George Orwell" },
-//     doc! { "title": "The Great Gatsby", "author": "F. Scott Fitzgerald" },
-//   ];
-
-//   // Insert some documents into the "mydb.books" collection.
-//   collection.insert_many(docs, None).await?;
-
-//   let filter = doc! { "author": "George Orwell" };
-//   let find_options = FindOptions::builder().sort(doc! { "title": 1 }).build();
-//   let mut cursor = collection.find(filter, find_options).await?;
-
-//   // Iterate over the results of the cursor.
-//   while let Some(result) = cursor.next().await {
-//     match result {
-//       Ok(document) => {
-//         if let Some(title) = document.get("title").and_then(Bson::as_str) {
-//           println!("title: {}", title);
-//         } else {
-//           println!("no title found");
-//         }
-//       }
-//       Err(e) => return Err(e.into()),
-//     }
-//   }
-//   Ok(())
-// }

@@ -1,3 +1,4 @@
+use super::model::{Cents, PaymentDestination, PaymentSource};
 use super::CreateTransactionRequest;
 use super::UserError;
 use std::{error::Error, fmt};
@@ -31,11 +32,18 @@ impl From<Box<ContextError>> for UserError {
 
 #[derive(Builder, Clone, Debug)]
 #[builder(setter(into, prefix = "with"))]
-pub struct CreateTransactionContext {}
+pub struct CreateTransactionContext {
+  pub cents: Cents,
+  pub from: PaymentSource,
+  pub to: PaymentDestination,
+}
 
 impl CreateTransactionContext {
   pub fn from(body: &CreateTransactionRequest) -> Result<Self, ContextError> {
     CreateTransactionContext::new()
+      .with_cents(body.cents.clone())
+      .with_from(body.from.clone())
+      .with_to(body.to.clone())
       .build()
       .map_err(|_e| ContextError)
   }
