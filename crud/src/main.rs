@@ -1,64 +1,49 @@
-use futures::stream::StreamExt;
-use mongodb::{
-  bson::{doc, Bson},
-  options::{ClientOptions, FindOptions},
-  Client,
+#[macro_use]
+extern crate derive_builder;
+
+use actix_web::{
+  http,
+  middleware::{errhandlers::ErrorHandlers, DefaultHeaders, Logger},
+  App, HttpServer,
 };
+use env_logger::Env;
+use listenfd::ListenFd;
+use mongodb::{options::ClientOptions, Client};
 
-#[tokio::main]
-async fn main() {
-  match run().await {
-    Ok(_) => println!("meow"),
-    Err(_) => println!("wood"),
-  };
-}
+use errors::{handle_404, handle_500};
+use transaction::config;
 
-async fn run() -> Result<(), mongodb::error::Error> {
-  let mut client_options = ClientOptions::parse("mongodb://localhost:27017").await?;
+mod errors;
+mod transaction;
+
+#[actix_rt::main]
+async fn main() -> std::io::Result<()> {
+  let mut listenfd = ListenFd::from_env();
+  env_logger::from_env(Env::default().default_filter_or("info")).init();
+
+  let mut client_options = ClientOptions::parse("mongodb://localhost:27017")
+    .await
+    .unwrap();
   client_options.app_name = Some("My App".to_string());
-  let client = Client::with_options(client_options)?;
+  let client = Client::with_options(client_options).unwrap();
 
-  // List the names of the databases in that deployment.
-  for db_name in client.list_database_names(None, None).await? {
-    println!("{}", db_name);
-  }
+  let mut server = HttpServer::new(move || {
+    App::new()
+      .configure(|cfg| config(cfg, client.clone()))
+      .wrap(
+        ErrorHandlers::new()
+          .handler(http::StatusCode::INTERNAL_SERVER_ERROR, handle_500)
+          .handler(http::StatusCode::NOT_FOUND, handle_404),
+      )
+      .wrap(Logger::new("'%r' %s %D"))
+      .wrap(DefaultHeaders::new().header("Content-Type", "application/json"))
+  });
 
-  // Get a handle to a database.
-  let db = client.database("mydb");
+  server = if let Some(l) = listenfd.take_tcp_listener(0).unwrap() {
+    server.listen(l)?
+  } else {
+    server.bind("127.0.0.1:3000")?
+  };
 
-  // List the names of the collections in that database.
-  for collection_name in db.list_collection_names(None).await? {
-    println!("{}", collection_name);
-  }
-
-  // Get a handle to a collection in the database.
-  let collection = db.collection("books");
-
-  let docs = vec![
-    doc! { "title": "1984", "author": "George Orwell" },
-    doc! { "title": "Animal Farm", "author": "George Orwell" },
-    doc! { "title": "The Great Gatsby", "author": "F. Scott Fitzgerald" },
-  ];
-
-  // Insert some documents into the "mydb.books" collection.
-  collection.insert_many(docs, None).await?;
-
-  let filter = doc! { "author": "George Orwell" };
-  let find_options = FindOptions::builder().sort(doc! { "title": 1 }).build();
-  let mut cursor = collection.find(filter, find_options).await?;
-
-  // Iterate over the results of the cursor.
-  while let Some(result) = cursor.next().await {
-    match result {
-      Ok(document) => {
-        if let Some(title) = document.get("title").and_then(Bson::as_str) {
-          println!("title: {}", title);
-        } else {
-          println!("no title found");
-        }
-      }
-      Err(e) => return Err(e.into()),
-    }
-  }
-  Ok(())
+  server.run().await
 }
