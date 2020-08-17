@@ -1,6 +1,5 @@
 use actix_web::{
   dev::{Body, ResponseBody, ServiceResponse},
-  error,
   http::{header, HeaderValue, StatusCode},
   middleware::errhandlers::ErrorHandlerResponse,
   HttpResponse, Result,
@@ -36,6 +35,22 @@ pub enum UserError {
   InternalError { cause: String },
   #[error("An Unknown Internal error occured")]
   UnknownError,
+}
+
+impl UserError {
+  pub fn response(&self) -> HttpResponse {
+    HttpResponse::build(self.status_code())
+      .header(header::CONTENT_TYPE, HeaderValue::from_static("text/plain"))
+      .body(self.to_string())
+  }
+
+  fn status_code(&self) -> StatusCode {
+    match *self {
+      UserError::ValidationError { .. } => StatusCode::BAD_REQUEST,
+      UserError::InternalError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
+      UserError::UnknownError => StatusCode::INTERNAL_SERVER_ERROR,
+    }
+  }
 }
 
 impl From<Box<dyn std::error::Error>> for UserError {
@@ -85,21 +100,5 @@ impl From<String> for UserError {
 impl From<&str> for UserError {
   fn from(item: &str) -> UserError {
     UserError::InternalError { cause: item.into() }
-  }
-}
-
-impl error::ResponseError for UserError {
-  fn error_response(&self) -> HttpResponse {
-    HttpResponse::build(self.status_code())
-      .header(header::CONTENT_TYPE, HeaderValue::from_static("text/plain"))
-      .body(self.to_string())
-  }
-
-  fn status_code(&self) -> StatusCode {
-    match *self {
-      UserError::ValidationError { .. } => StatusCode::BAD_REQUEST,
-      UserError::InternalError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
-      UserError::UnknownError => StatusCode::INTERNAL_SERVER_ERROR,
-    }
   }
 }

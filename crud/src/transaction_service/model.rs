@@ -1,19 +1,18 @@
 use serde::{Deserialize, Serialize};
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct Txid {
-  #[serde(flatten, rename = "_id")]
+  #[serde(rename = "_id")]
   pub id: String,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct Cents {
-  #[serde(flatten)]
   pub val: i32,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct User {
-  pub id: u32,
+  pub id: i32,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
@@ -33,6 +32,8 @@ pub enum PaymentDestination {
 #[derive(Deserialize, Serialize, Builder, Clone, Debug)]
 #[builder(setter(into))]
 pub struct Transaction {
+  #[builder(setter(into, strip_option), default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   id: Option<Txid>,
   cents: Cents,
   from: PaymentSource,

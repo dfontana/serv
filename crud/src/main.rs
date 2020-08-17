@@ -6,30 +6,48 @@ use actix_web::{
   middleware::{errhandlers::ErrorHandlers, DefaultHeaders, Logger},
   App, HttpServer,
 };
-use env_logger::Env;
 use listenfd::ListenFd;
-use mongodb::{options::ClientOptions, Client};
+use mongodb::{options::ClientOptions, Client, Collection};
 
 use errors::{handle_404, handle_500};
-use transaction::config;
+use transaction_service::TransactionService;
 
 mod errors;
-mod transaction;
+mod transaction_router;
+mod transaction_service;
+
+pub struct ServiceManager {
+  txn: TransactionService,
+}
+
+impl ServiceManager {
+  pub fn new(txn: TransactionService) -> Self {
+    ServiceManager { txn }
+  }
+}
+
+pub struct AppState {
+  service_manager: ServiceManager,
+}
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
-  let mut listenfd = ListenFd::from_env();
-  env_logger::from_env(Env::default().default_filter_or("info")).init();
+  std::env::set_var("RUST_LOG", "actix_web=debug,actix_server=info");
+  std::env::set_var("RUST_BACKTRACE", "1");
+  env_logger::init();
 
-  let mut client_options = ClientOptions::parse("mongodb://localhost:27017")
-    .await
-    .unwrap();
-  client_options.app_name = Some("My App".to_string());
-  let client = Client::with_options(client_options).unwrap();
+  //  InitDB
+  let client = init_client().await;
+  let txn_coll = init_collections(client);
+
+  // Init local listen for autoreload
+  let listen = ListenFd::from_env().take_tcp_listener(0).unwrap();
 
   let mut server = HttpServer::new(move || {
+    let txn = TransactionService::new(txn_coll.clone());
+    let manager = ServiceManager::new(txn);
+
     App::new()
-      .configure(|cfg| config(cfg, client.clone()))
       .wrap(
         ErrorHandlers::new()
           .handler(http::StatusCode::INTERNAL_SERVER_ERROR, handle_500)
@@ -37,13 +55,25 @@ async fn main() -> std::io::Result<()> {
       )
       .wrap(Logger::new("'%r' %s %D"))
       .wrap(DefaultHeaders::new().header("Content-Type", "application/json"))
+      .data(AppState {
+        service_manager: manager,
+      })
+      .configure(transaction_router::init)
   });
-
-  server = if let Some(l) = listenfd.take_tcp_listener(0).unwrap() {
-    server.listen(l)?
-  } else {
-    server.bind("127.0.0.1:3000")?
+  server = match listen {
+    Some(l) => server.listen(l)?,
+    None => server.bind("127.0.0.1:3000")?,
   };
-
   server.run().await
+}
+
+async fn init_client() -> Client {
+  let db_url = "mongodb://localhost:27017";
+  let client_options = ClientOptions::parse(db_url).await.unwrap();
+  Client::with_options(client_options).unwrap()
+}
+
+fn init_collections(client: Client) -> Collection {
+  let db = client.database("main");
+  db.collection("transactions")
 }

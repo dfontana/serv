@@ -1,20 +1,28 @@
-use super::context::CreateTransactionContext;
-use super::model::{Transaction, TransactionBuilder, Txid};
-use super::UserError;
+use super::model::{
+  Cents, PaymentDestination, PaymentSource, Transaction, TransactionBuilder, Txid,
+};
+use crate::errors::UserError;
 use mongodb::{
   bson::{doc, from_bson, to_bson},
-  Client,
+  Collection,
 };
+use serde::{Deserialize, Serialize};
 
-#[derive(Builder)]
-#[builder(setter(into, prefix = "with"))]
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct CreateTransactionContext {
+  pub cents: Cents,
+  pub from: PaymentSource,
+  pub to: PaymentDestination,
+}
+
+#[derive(Clone)]
 pub struct TransactionService {
-  mongo: Client,
+  txns: Collection,
 }
 
 impl TransactionService {
-  pub fn new() -> TransactionServiceBuilder {
-    TransactionServiceBuilder::default()
+  pub fn new(txns: Collection) -> TransactionService {
+    TransactionService { txns }
   }
 
   pub async fn create(&self, ctx: CreateTransactionContext) -> Result<Txid, UserError> {
@@ -22,25 +30,24 @@ impl TransactionService {
       .cents(ctx.cents.clone())
       .from(ctx.from.clone())
       .to(ctx.to.clone())
-      .build();
+      .build()?;
     let doc = to_bson(&txn)?
       .as_document()
       .ok_or("Failed to build doc")?
       .to_owned();
-    let collection = self.mongo.database("main").collection("transactions");
-    collection
+    self
+      .txns
       .insert_one(doc, None)
       .await
       .map(|res| Txid {
-        id: res.inserted_id.as_str().unwrap_or_default().to_string(),
+        id: res.inserted_id.as_object_id().unwrap().to_string(),
       })
       .map_err(UserError::from)
   }
 
   pub async fn load(&self, txid: Txid) -> Result<Transaction, UserError> {
-    let collection = self.mongo.database("main").collection("transactions");
     let filter = doc! {"_id": txid.id};
-    let maybe_doc = match collection.find_one(filter, None).await {
+    let maybe_doc = match self.txns.find_one(filter, None).await {
       Ok(d) => d,
       Err(err) => {
         return Err(UserError::InternalError {
