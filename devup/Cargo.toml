@@ -11,3 +11,5 @@ structopt = "0.3.14"
 error-chain = "0.12.2"
 confy = "0.4.0"
 serde = {version = "1.0.106", features = ["derive"] }
+git2 = "0.13"
+dialoguer = "0.6.2"
