@@ -3,7 +3,7 @@ use super::model::{
 };
 use crate::errors::UserError;
 use mongodb::{
-  bson::{doc, from_bson, to_bson},
+  bson::{doc, from_bson, to_bson, oid::ObjectId},
   Collection,
 };
 use serde::{Deserialize, Serialize};
@@ -46,7 +46,7 @@ impl TransactionService {
   }
 
   pub async fn load(&self, txid: Txid) -> Result<Transaction, UserError> {
-    let filter = doc! {"_id": txid.id};
+    let filter = doc! {"_id": ObjectId::with_string(txid.id.as_str()).unwrap() };
     let maybe_doc = match self.txns.find_one(filter, None).await {
       Ok(d) => d,
       Err(err) => {
