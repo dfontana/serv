@@ -27,6 +27,7 @@ impl<T> Stream<T> {
     }
     Stream { data: vec }
   }
+
   pub fn filter<F>(&self, f: F) -> Stream<T>
   where
     F: Fn(&T) -> bool,
@@ -39,6 +40,15 @@ impl<T> Stream<T> {
     }
     Stream { data: vec }
   }
+
+  pub fn to_vec_ref(&self) -> Vec<&T> {
+    let mut vec = Vec::new();
+    for d in self.data.iter() {
+      vec.push(d.as_ref());
+    }
+    vec
+  }
+
   pub fn each<F>(&self, mut f: F)
   where
     F: FnMut(&T),
@@ -46,5 +56,15 @@ impl<T> Stream<T> {
     for d in self.data.iter() {
       f(d)
     }
+  }
+}
+
+impl<T: Clone> Stream<T> {
+  fn to_vec(&self) -> Vec<T> {
+    let mut vec = Vec::new();
+    for d in self.data.iter() {
+      vec.push((*d.as_ref()).clone());
+    }
+    vec
   }
 }
