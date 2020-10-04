@@ -8,16 +8,16 @@ pub struct Stream<T> {
   data: Vec<Arc<T>>,
 }
 
-pub fn of<T: Clone>(args: &[T]) -> Stream<T> {
+pub fn of<T>(args: &[T]) -> Stream<&T> {
   let mut vec = Vec::new();
   for d in args.iter() {
-    vec.push(Arc::new(d.clone()))
+    vec.push(Arc::new(d))
   }
   Stream { data: vec }
 }
 
 impl<T> Stream<T> {
-  pub fn map<F, K>(&self, f: F) -> Stream<K>
+  pub fn map<F, K>(self, f: F) -> Stream<K>
   where
     F: Fn(&T) -> K,
   {
@@ -41,14 +41,6 @@ impl<T> Stream<T> {
     Stream { data: vec }
   }
 
-  pub fn to_vec_ref(&self) -> Vec<&T> {
-    let mut vec = Vec::new();
-    for d in self.data.iter() {
-      vec.push(d.as_ref());
-    }
-    vec
-  }
-
   pub fn each<F>(&self, mut f: F)
   where
     F: FnMut(&T),
@@ -63,7 +55,7 @@ impl<T: Clone> Stream<T> {
   fn to_vec(&self) -> Vec<T> {
     let mut vec = Vec::new();
     for d in self.data.iter() {
-      vec.push((*d.as_ref()).clone());
+      vec.push((*(d.as_ref())).clone());
     }
     vec
   }
